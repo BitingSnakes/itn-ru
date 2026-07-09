@@ -21,6 +21,7 @@ archive, keys `TAGGER` / `VERBALIZER`).
 brew install openfst cmake   # macOS; on Debian/Ubuntu: apt install libfst-dev cmake
 cmake -B build -S cpp
 cmake --build build
+ctest --test-dir build --output-on-failure
 ```
 
 Produces `librus_itn.a` and the `rus_itn_cli` demo binary.
@@ -52,5 +53,6 @@ if (itn->Normalize("седьмой час двадцать пять минут",
 std::string out2 = itn->NormalizeOrPassthrough("любой текст");
 ```
 
-Link against `rus_itn` and OpenFST (`-lfst`). The normalizer is immutable after
-construction; `Normalize` is safe to call concurrently from multiple threads.
+When installed, CMake consumers can use `find_package(rus_itn CONFIG REQUIRED)` and
+link `rus_itn::rus_itn`. The normalizer is immutable after construction; `Normalize`
+is safe to call concurrently from multiple threads.

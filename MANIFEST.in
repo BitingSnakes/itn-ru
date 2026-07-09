@@ -1,3 +1,11 @@
 include LICENSE
 include README.md
-recursive-include rus/data  *.tsv
+include CHANGELOG.md
+recursive-include rus/data *.tsv
+include cpp/CMakeLists.txt
+include cpp/README.md
+recursive-include cpp/include *.h
+recursive-include cpp/src *.cc
+recursive-include cpp/tools *.cc
+recursive-include cpp/tests *.cc
+recursive-include cpp/cmake *.cmake *.in

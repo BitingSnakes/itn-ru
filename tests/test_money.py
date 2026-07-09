@@ -27,6 +27,18 @@ def test_money(spoken, expected):
 @pytest.mark.parametrize(
     "spoken,expected",
     [
+        ("минус пять рублей", "-₽5"),
+        ("минус два евро пятьдесят евроцентов", "-€2.50"),
+        ("минус ноль целых пять десятых биткоина", "-₿0.5"),
+    ],
+)
+def test_negative_money(spoken, expected):
+    assert normalize(spoken) == expected
+
+
+@pytest.mark.parametrize(
+    "spoken,expected",
+    [
         ("сто евро", "€100"),
         ("два евро пятьдесят евроцентов", "€2.50"),
         ("пятьдесят евроцентов", "€0.50"),

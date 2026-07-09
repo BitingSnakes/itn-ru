@@ -52,6 +52,17 @@ def test_ip(spoken, expected):
 
 
 @pytest.mark.parametrize(
+    "spoken,invalid_output",
+    [
+        ("двести пятьдесят шесть точка ноль точка ноль точка один", "256.0.0.1"),
+        ("девятьсот девяносто девять точка ноль точка ноль точка один", "999.0.0.1"),
+    ],
+)
+def test_invalid_ipv4_octets_are_not_emitted(spoken, invalid_output):
+    assert normalize(spoken) != invalid_output
+
+
+@pytest.mark.parametrize(
     "spoken,expected",
     [
         ("девяностые годы", "90-е годы"),

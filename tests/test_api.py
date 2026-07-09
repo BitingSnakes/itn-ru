@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 
@@ -8,7 +9,7 @@ from rus.wfst import InverseNormalizer, get_normalizer, normalize
 
 
 def test_package_exports():
-    assert rus.__version__ == "0.1.9"
+    assert rus.__version__ == "0.2.0"
     assert rus.normalize is normalize
     assert rus.InverseNormalizer is InverseNormalizer
 
@@ -17,8 +18,31 @@ def test_normalize_basic():
     assert normalize("двадцать две тысячи сто один") == "22101"
 
 
+def test_normalize_is_case_insensitive_but_preserves_plain_words():
+    assert normalize("Москва потратила СТО РУБЛЕЙ") == "Москва потратила ₽100"
+
+
+def test_normalize_accepts_decomposed_yo_but_preserves_plain_words():
+    assert normalize("пять рубле\u0308м") == "₽5"
+    assert normalize("Е\u0308ж") == "Е\u0308ж"
+
+
 def test_normalize_json():
     assert normalize("седьмой час двадцать пять минут", json=True) == '[{"time": "07:25"}]'
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        'a"b',
+        r"a\b",
+        r"a\q",
+        "эмодзи😀",
+        "контроль\x01символ",
+    ],
+)
+def test_normalize_json_preserves_arbitrary_words(text):
+    assert json.loads(normalize(text, json=True)) == [{"word": text}]
 
 
 def test_normalizer_is_singleton():

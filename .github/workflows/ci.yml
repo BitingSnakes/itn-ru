@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install locked dependencies
+        run: uv sync --locked --python "${{ matrix.python-version }}"
+      - name: Run tests
+        run: uv run --python "${{ matrix.python-version }}" pytest -q
+      - name: Lint
+        if: matrix.python-version == '3.13'
+        run: uv run ruff check .
+
+  package:
+    name: Build and inspect distributions
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Build sdist and wheel
+        run: |
+          rm -rf dist
+          uv build
+      - name: Verify distribution contents
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          sdist = next(Path("dist").glob("*.tar.gz"))
+          wheel = next(Path("dist").glob("*.whl"))
+
+          with tarfile.open(sdist) as archive:
+              names = archive.getnames()
+              required_suffixes = (
+                  "/CHANGELOG.md",
+                  "/cpp/CMakeLists.txt",
+                  "/cpp/README.md",
+                  "/cpp/include/rus_itn/rus_itn.h",
+                  "/cpp/src/rus_itn.cc",
+                  "/cpp/tools/rus_itn_main.cc",
+                  "/cpp/tests/rus_itn_test.cc",
+                  "/cpp/cmake/FindOpenFST.cmake",
+                  "/cpp/cmake/rus_itnConfig.cmake.in",
+              )
+              missing = [suffix for suffix in required_suffixes if not any(name.endswith(suffix) for name in names)]
+              if missing:
+                  raise SystemExit(f"sdist is missing release files: {missing}")
+
+          with zipfile.ZipFile(wheel) as archive:
+              names = set(archive.namelist())
+              required = {
+                  "rus/py.typed",
+                  "rus/data/month.tsv",
+                  "rus/data/measurements.tsv",
+              }
+              missing = sorted(required - names)
+              if missing:
+                  raise SystemExit(f"wheel is missing package data: {missing}")
+          PY
+      - name: Check package metadata
+        run: uvx --from twine twine check dist/*
+      - name: Install wheel in an isolated environment
+        run: |
+          uv venv /tmp/rus-itn-wheel
+          uv pip install --python /tmp/rus-itn-wheel/bin/python dist/*.whl
+          cd /tmp
+          /tmp/rus-itn-wheel/bin/python -c 'from rus import normalize; assert normalize("сто рублей") == "₽100"'
+
+  cpp:
+    name: C++ build, tests, and Python parity
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install OpenFST build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cmake libfst-dev ninja-build
+      - name: Install locked Python dependencies
+        run: uv sync --locked --python 3.13
+      - name: Export grammars
+        run: uv run python -m rus.export grammars_export
+      - name: Build C++ library and CLI
+        run: |
+          cmake -S cpp -B cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build cpp/build --parallel
+      - name: Run native C++ tests
+        run: ctest --test-dir cpp/build --output-on-failure
+      - name: Check Python and C++ parity
+        run: uv run python .github/scripts/check_cpp_parity.py cpp/build/rus_itn_cli grammars_export

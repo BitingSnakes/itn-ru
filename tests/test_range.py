@@ -47,3 +47,11 @@ def test_date_range(spoken, expected):
 def test_time_range_requires_hour_word():
     # without «часа» the phrase may be about anything -> untouched
     assert normalize("с первой по пятую попытку") == "с первой по пятую попытку"
+
+
+def test_invalid_time_range_hours_are_not_emitted():
+    assert normalize("с двадцать пятого до двадцать шестого часа") != "с 25:00 до 26:00"
+
+
+def test_invalid_date_range_days_are_not_emitted():
+    assert normalize("с тридцать второго по тридцать третье января") != "с 32 по 33 января"

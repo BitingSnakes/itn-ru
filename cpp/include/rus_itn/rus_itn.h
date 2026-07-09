@@ -4,8 +4,8 @@
 // `python -m rus.export` and reproduces the same pipeline:
 // tag -> reorder -> verbalize, taking the shortest path at each step.
 
-#ifndef rus_itn_rus_itn_H_
-#define rus_itn_rus_itn_H_
+#ifndef RUS_ITN_RUS_ITN_H_
+#define RUS_ITN_RUS_ITN_H_
 
 #include <memory>
 #include <string>
@@ -25,7 +25,8 @@ class InverseNormalizer {
 
   // Normalizes a UTF-8 sentence, e.g.
   //   "двадцать две тысячи сто один" -> "22101".
-  // Returns false (and fills *error) if the grammar cannot parse the input.
+  // Returns false (and fills *error) if the input is not valid UTF-8 or the
+  // grammar cannot parse it. `output` must not be null.
   bool Normalize(const std::string& text, std::string* output,
                  std::string* error = nullptr) const;
 
@@ -33,13 +34,14 @@ class InverseNormalizer {
   std::string NormalizeOrPassthrough(const std::string& text) const;
 
  private:
-  InverseNormalizer(std::unique_ptr<fst::StdVectorFst> tagger,
-                    std::unique_ptr<fst::StdVectorFst> verbalizer);
+  InverseNormalizer(std::unique_ptr<fst::StdConstFst> tagger,
+                    std::unique_ptr<fst::StdConstFst> verbalizer);
 
-  std::unique_ptr<fst::StdVectorFst> tagger_;
-  std::unique_ptr<fst::StdVectorFst> verbalizer_;
+  // ConstFst is immutable and documented by OpenFST as thread-safe.
+  std::unique_ptr<fst::StdConstFst> tagger_;
+  std::unique_ptr<fst::StdConstFst> verbalizer_;
 };
 
 }  // namespace rus_itn
 
-#endif  // rus_itn_rus_itn_H_
+#endif  // RUS_ITN_RUS_ITN_H_

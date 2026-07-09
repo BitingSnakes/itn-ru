@@ -71,10 +71,12 @@ class RangeFst(GraphFst):
             load_ordinal("ordinal_ties"),
             cardinal.graph_ties + delete_space + load_ordinal("ordinal_digit"),
         )
+        time_ordinal = ordinal @ pynini.union(*(str(value) for value in range(1, 25)))
+        date_ordinal = ordinal @ pynini.union(*(str(value) for value in range(1, 32)))
 
         # с девятого до восемнадцатого часа -> с 09:00 до 18:00
         pad = (NEMO_DIGIT + NEMO_DIGIT) | (pynutil.insert("0") + NEMO_DIGIT)
-        hour = (ordinal @ pad) + pynutil.insert(":00")
+        hour = (time_ordinal @ pad) + pynutil.insert(":00")
         nbsp = pynini.cross(" ", NEMO_NON_BREAKING_SPACE)
         time_range = (
             pynini.union("с", "от") + nbsp + hour + nbsp + pynini.union("до", "по") + nbsp + hour + pynutil.delete(pynini.union(" часа", " часов", " час"))
@@ -82,7 +84,7 @@ class RangeFst(GraphFst):
 
         # с первого по пятое января -> с 1 по 5 января
         month = pynini.string_file(get_abs_path("data/month.tsv"))
-        date_range = pynini.union("с", "от") + nbsp + ordinal + nbsp + pynini.union("до", "по") + nbsp + ordinal + nbsp + month
+        date_range = pynini.union("с", "от") + nbsp + date_ordinal + nbsp + pynini.union("до", "по") + nbsp + date_ordinal + nbsp + month
 
         graph = numeric | time_range | date_range
         graph = pynutil.insert('word { name: "') + graph + pynutil.insert('" }')
