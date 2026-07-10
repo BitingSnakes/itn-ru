@@ -23,6 +23,7 @@ from rus.taggers.score import ScoreFst
 from rus.taggers.telephone import TelephoneFst
 from rus.taggers.time import TimeFst
 from rus.taggers.version import VersionFst
+from rus.taggers.whitelist import WhitelistFst
 from rus.taggers.word import WordFst
 
 
@@ -58,9 +59,11 @@ class ClassifyFst(GraphFst):
         ip_graph = IpFst(cardinal=cardinal).fst
         word_graph = WordFst().fst
         money_graph = MoneyFst(cardinal=cardinal, decimal=decimal).fst
+        whitelist_graph = WhitelistFst().fst
 
         classify = (
-            pynutil.add_weight(duration_graph, 1.09)
+            pynutil.add_weight(whitelist_graph, 1.01)
+            | pynutil.add_weight(duration_graph, 1.09)
             | pynutil.add_weight(decade_graph, 1.09)
             | pynutil.add_weight(legal_graph, 1.09)
             | pynutil.add_weight(score_graph, 1.09)

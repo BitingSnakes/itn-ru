@@ -6,6 +6,7 @@ Supported semiotic classes: cardinal, ordinal, decimal, fraction, measure, money
 telephone, electronic (e-mail/URL), century (Roman numerals), number sign (№), ranges
 (numeric/time/date), durations & half-quantities, decades, legal references, scores,
 versions, IPv4, postal codes, street addresses.
+Also supports high-priority spoken abbreviations and time day-period/time-zone forms.
 Punctuation-aware (built for ASR output): `"сто рублей, пожалуйста!"` -> `₽100, пожалуйста!`,
 `"восемь девятьсот двенадцать, триста сорок пять, шестьдесят семь, восемьдесят девять"` -> `89123456789`
 Uppercase input and precomposed/decomposed `ё` are accepted without changing the spelling
@@ -32,6 +33,8 @@ normalize("минус пять целых одна десятая процент
 normalize("двадцать две тысячи сто один")  # 22101
 normalize("седьмой час двадцать пять минут")  # 07:25
 normalize("МИНУС ПЯТЬ РУБЛЕЙ")  # -₽5
+normalize("третий час дня по московскому времени")  # 15:00 Europe/Moscow
+normalize("подключи ю эс би и вай фай")  # подключи USB и Wi-Fi
 ```
 
 The grammars are built lazily on the first call (several seconds) and cached for the

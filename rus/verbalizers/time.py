@@ -1,7 +1,7 @@
 import pynini
 from pynini.lib import pynutil
 
-from rus.graph_utils import NEMO_DIGIT, GraphFst, delete_space
+from rus.graph_utils import NEMO_CHAR, NEMO_DIGIT, GraphFst, delete_space, insert_space
 
 
 class TimeFst(GraphFst):
@@ -17,5 +17,15 @@ class TimeFst(GraphFst):
         hour = pynutil.delete("hours:") + delete_space + pynutil.delete('"') + pynini.closure(NEMO_DIGIT, 1) + pynutil.delete('"')
         minute = pynutil.delete("minutes:") + delete_space + pynutil.delete('"') + pynini.closure(NEMO_DIGIT, 1) + pynutil.delete('"')
         graph = hour @ add_leading_zero_to_double_digit + delete_space + pynutil.insert(":") + (minute @ add_leading_zero_to_double_digit)
+        zone = (
+            delete_space
+            + insert_space
+            + pynutil.delete("zone:")
+            + delete_space
+            + pynutil.delete('"')
+            + pynini.closure(NEMO_CHAR - " ", 1)
+            + pynutil.delete('"')
+        )
+        graph += pynini.closure(zone, 0, 1)
         delete_tokens = self.delete_tokens(graph)
         self.fst = delete_tokens.optimize()

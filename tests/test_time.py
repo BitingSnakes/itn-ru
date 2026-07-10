@@ -37,3 +37,18 @@ def test_time(spoken, expected):
 )
 def test_invalid_clock_values_are_not_emitted(spoken, invalid_output):
     assert normalize(spoken) != invalid_output
+
+
+@pytest.mark.parametrize(
+    "spoken,expected",
+    [
+        ("третий час дня", "15:00"),
+        ("третий вечера", "15:00"),
+        ("двенадцатый ночи", "00:00"),
+        ("третий час пять минут по московскому времени", "03:05 Europe/Moscow"),
+        ("половина десятого по киевскому времени", "09:30 Europe/Kyiv"),
+        ("двенадцатый ноль ноль по всемирному координированному времени", "12:00 UTC"),
+    ],
+)
+def test_time_periods_and_zones(spoken, expected):
+    assert normalize(spoken) == expected
